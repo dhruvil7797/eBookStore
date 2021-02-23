@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useEffect} from "react";
 import {useHistory} from 'react-router-dom'
 import AppBar from "@material-ui/core/AppBar";
 import Button from "@material-ui/core/Button";
@@ -86,8 +86,26 @@ const books = [
 ];
 
 export default function Books() {
+  useEffect(() => {
+      cronJob();
+  }, [])
   const classes = useStyles();
   const history = useHistory();
+
+    console.log("called")
+
+    const cronJob = () => {
+      setTimeout(() => {
+        fetch("/cron-job").then((res)=>{
+              console.log(res)
+              cronJob();
+            })
+      }, 60000)
+    }
+
+    // setTimeout(()=> {
+    //   
+    // }, 3000)
 
   return (
     <React.Fragment>

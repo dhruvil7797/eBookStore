@@ -39,7 +39,10 @@ app.use(multer({ storage: fileStorage, fileFilter: imgFileFilter }).any()); // a
 app.use("/assets", express.static(path.join("./", "assets")));
 
 
-
+app.get("/cron-job", (req,res) => {
+  console.log("request called")
+  res.send("response send")
+})
 app.post("/add-data", (req,res) => {
     console.log(req.files[0])
     res.send("Hello")
