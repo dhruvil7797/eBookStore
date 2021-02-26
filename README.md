@@ -7,7 +7,6 @@ Postman collection URL: https://documenter.getpostman.com/view/14701165/TWDcEu59
 - Joi
 - Knex
 - JWT
-- cron-node
 
 ## Installation
 
