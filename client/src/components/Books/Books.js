@@ -1,31 +1,19 @@
-import React, {useEffect} from "react";
-import {useHistory} from 'react-router-dom'
+import React, { useEffect, useState } from "react";
+import { useHistory } from 'react-router-dom'
 import AppBar from "@material-ui/core/AppBar";
 import Button from "@material-ui/core/Button";
 import Card from "@material-ui/core/Card";
-import CardActions from "@material-ui/core/CardActions";
 import CardContent from "@material-ui/core/CardContent";
-import CardMedia from "@material-ui/core/CardMedia";
 import Toolbar from '@material-ui/core/Toolbar';
 import Grid from "@material-ui/core/Grid";
 import Typography from "@material-ui/core/Typography";
 import { makeStyles } from "@material-ui/core/styles";
 import Container from "@material-ui/core/Container";
-import Link from "@material-ui/core/Link";
+import Cookies from 'js-cookie'
+import Snackbar from '@material-ui/core/Snackbar';
+import Alert from '@material-ui/lab/Alert';
 
-function Copyright() {
-  return (
-    <Typography variant="body2" color="textSecondary" align="center">
-      {"Copyright © "}
-      <Link color="inherit" href="https://material-ui.com/">
-        Your Website
-      </Link>{" "}
-      {new Date().getFullYear()}
-      {"."}
-    </Typography>
-  );
-}
-
+// Stylesheet for books component
 const useStyles = makeStyles((theme) => ({
   icon: {
     marginRight: theme.spacing(2),
@@ -58,92 +46,120 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const books = [
-  {
-    title: "Abc",
-    totalQty: 0,
-  },
-  {
-    title: "Abc",
-    totalQty: 15,
-  },
-  {
-    title: "Abc",
-    totalQty: 15,
-  },
-  {
-    title: "Abc",
-    totalQty: 0,
-  },
-  {
-    title: "Abc",
-    totalQty: 15,
-  },
-  {
-    title: "Abc",
-    totalQty: 15,
-  },
-];
-
 export default function Books() {
+
+  // Check for token when page loads, if token is not stored, redirect to dashboard
   useEffect(() => {
-      cronJob();
-  }, [])
+    let token = Cookies.get('x-access-token');
+    if (!token) {
+      history.push("/");
+      return;
+    }
+
+    // Fetch book details from database
+    fetchUpdate();
+  }, []);
+
+  const [books, setBooks] = useState([]);
   const classes = useStyles();
   const history = useHistory();
 
-    console.log("called")
+  const fetchUpdate = async () => {
+    // Check for token
+    if (Cookies.get('x-access-token')) {
 
-    const cronJob = () => {
-      setTimeout(() => {
-        fetch("/cron-job").then((res)=>{
-              console.log(res)
-              cronJob();
-            })
+      // If token is store call API endpoint to fetch the stock
+      let res = await fetch("http://localhost:8080/BookStores", {
+        credentials: "include",
+        headers: {
+          "x-access-token": Cookies.get('x-access-token')
+        }
+      });
+
+      // If response returns success
+      if (res.status === 200) {
+
+        // Update stock and update the state to rerender the page
+        const content = await res.json();
+        if (content.data.books) {
+          let bookData = content.data.books;
+          let updatedData = [];
+          for (let i = 0; i < bookData.length; i++) {
+            updatedData.push({
+              title: bookData[i].name,
+              qty: bookData[i].qty,
+              price: bookData[i].price
+            });
+          }
+          setBooks(updatedData);
+        }
+      }
+
+      // Start timer to update the stock after 1 minute
+      setTimeout(async () => {
+        fetchUpdate();
       }, 60000)
     }
-
-    // setTimeout(()=> {
-    //   
-    // }, 3000)
+  }
 
   return (
     <React.Fragment>
+      {/* Snackbar to display the auth token that can be used to send further requests */}
+      <Snackbar
+        open={true}
+        autoHideDuration={5000}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "left"
+        }}
+
+      >
+        <Alert severity="info">
+          {"Auth token is " + Cookies.get('x-access-token')}
+        </Alert>
+      </Snackbar>
+
+      {/* Bookstore appbar */}
       <AppBar position="relative">
         <Toolbar>
-          <Typography variant="h6" color="inherit" noWrap style={{flexGrow:"1"}}>
+          <Typography variant="h6" color="inherit" noWrap style={{ flexGrow: "1" }}>
             Book Store
           </Typography>
-          <Button variant="contained" color='secondary' onClick={() => { history.push("/") }} >
-              Logout
+          <Button variant="contained" color='secondary' onClick={() => {
+            Cookies.remove('x-access-token');
+            history.push("/");
+          }} >
+            Logout
           </Button>
         </Toolbar>
       </AppBar>
+
       <main>
         <Container className={classes.cardGrid} maxWidth="md">
-          {/* End hero unit */}
+          {/* Grid to display books */}
           <Grid container spacing={4}>
             {books.map((card, i) => (
               <Grid item key={i} xs={12} sm={6} md={4}>
                 <Card className={classes.card}>
-                  <CardMedia
-                    className={classes.cardMedia}
-                    image="https://source.unsplash.com/random"
-                    title="Image title"
-                  />
                   <CardContent className={classes.cardContent}>
+                    {/* Title of the book */}
                     <Typography gutterBottom variant="h5" component="h2">
                       {card.title}
                     </Typography>
-                    {card.totalQty === 0 ? (
-                      <Typography gutterBottom variant="h5" component="h2" style={{color:"grey"}} >
+                    {/* Qty of the book */}
+                    {card.qty === 0 ? (
+                      <Typography gutterBottom variant="h5" component="h2" style={{ color: "grey" }} >
                         Out Of Stock
                       </Typography>
                     ) : (
-                      <Typography gutterBottom variant="h5" component="h2">
-                        Total Quanity {card.totalQty}
-                      </Typography>
-                    )}
+                        <Typography gutterBottom variant="h5" component="h2">
+                          Total Quanity {card.qty}
+                        </Typography>
+                      )}
+                    {/* Price of the book */}
+                    <Typography gutterBottom variant="h5" component="h2">
+                      {"$" + card.price}
+                    </Typography>
                   </CardContent>
                 </Card>
               </Grid>

@@ -1,53 +1,26 @@
-const express =  require('express') 
-const multer = require('multer');
-const path = require('path')
+const { json } = require('body-parser');
+const express = require('express')
+const { rw } = require('./Helper/ResponseGenerator');
+const { bookRouter } = require('./Router/Books');
+const { bookStoreRouter } = require('./Router/BookStores');
 const app = express();
+const cors = require('cors');
 
+app.use(json())
+app.use(cors({ origin: "http://localhost:3000", credentials: true }))
 
+app.use(bookRouter)
+app.use(bookStoreRouter)
 
-app.get("/", (req,res) => {
-    res.send("Hello")
+app.get("/", (req, res) => {
+  res.send("Server connected");
 })
 
-
-//File storage and files upload configurations
-const fileStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, "uploads");
-    },
-    filename: (req, file, cb) => {
-      cb(null, new Date().getTime() + "-" + file.originalname);
-    },
-  });
-  
-  //configuration of file types to  upload
-  const imgFileFilter = (req, file, cb) => {
-    if (
-      file.mimetype === "image/png" ||
-      file.mimetype === "image/jpg" ||
-      file.mimetype === "image/jpeg"
-    ) {
-      cb(null, true);
-    } else {
-      cb(null, false);
-    }
-  };
-
-app.use(multer({ storage: fileStorage, fileFilter: imgFileFilter }).any()); // any() supports multiple image uploads
-
-
-app.use("/assets", express.static(path.join("./", "assets")));
-
-
-app.get("/cron-job", (req,res) => {
-  console.log("request called")
-  res.send("response send")
+app.use((req, res) => {
+  res.send(rw(false, "Invalid URL"));
 })
-app.post("/add-data", (req,res) => {
-    console.log(req.files[0])
-    res.send("Hello")
-})
+
 
 app.listen(8080, () => {
-    console.log("running")
+  console.log("Server running on PORT 8080")
 })
